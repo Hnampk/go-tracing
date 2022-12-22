@@ -1,7 +1,10 @@
 package gotracing
 
 import (
+	"log"
+	"regexp"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -21,15 +24,31 @@ type MetricsManager struct {
 }
 
 var (
+	namespace          string
 	ProcessTimeBuckets = []float64{0.5, 0.8, 1, 1.2, 1.5, 2, 2.5, 10, 20, 60}
 )
 
 // MustGetTracer creates a tracer with the specified name. If an invalid name
 // is provided, the operation will panic.
 func MustGetTracer(moduleName string) *Tracer {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		log.Fatal("Failed to read build info")
+	}
+
+	var goModuleName string
+	if bi.Main.Path != "" {
+		goModuleName = bi.Main.Path
+	} else if len(bi.Deps) > 0 {
+		goModuleName = bi.Deps[0].Path
+	}
+	goModuleName = goModuleName[strings.LastIndex(goModuleName, "/")+1:]
+	cleanedName := regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(goModuleName, "")
+	namespace = cleanedName
+
 	countStartMetrics := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "api",
+			Namespace: namespace,
 			Subsystem: moduleName,
 			Name:      "count_start",
 			Help:      "Number of function called",
@@ -37,7 +56,7 @@ func MustGetTracer(moduleName string) *Tracer {
 	)
 	countEndMetrics := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "api",
+			Namespace: namespace,
 			Subsystem: moduleName,
 			Name:      "count_end",
 			Help:      "Number of function done",
@@ -45,7 +64,7 @@ func MustGetTracer(moduleName string) *Tracer {
 	)
 	durationMetrics := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: "api",
+			Namespace: namespace,
 			Subsystem: moduleName,
 			Name:      "duration",
 			Help:      "Amount of time spent to process a transaction",
@@ -89,7 +108,7 @@ func (t *Tracer) EndFunction(traceNo string) {
 //	mylogger.EndFunctionWithDurationSince(traceNo, startTime)
 func (t *Tracer) EndFunctionWithDurationSince(traceNo string, startTime time.Time) {
 	duration := time.Since(startTime)
-	t.flogging.GetRootLogger().Infof("[%s] EndFunction at %d, duration=%dms", traceNo, currentMillis(), duration.Milliseconds())
+	t.flogging.GetRootLogger().Infof("%s [%s] EndFunction at %d, duration=%dms", namespace, traceNo, currentMillis(), duration.Milliseconds())
 
 	t.metrics.countEndMetrics.WithLabelValues(getCallerFuncName()).Add(1)
 	t.metrics.durationMetrics.WithLabelValues(getCallerFuncName()).Observe(float64(duration.Milliseconds()))
