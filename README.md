@@ -57,7 +57,7 @@ func myfunction(){
 }
 ```
 
--   option 2: call `EndFunctionWithDurationSince()` with defer at the beginning of function call. For example
+-   option 2: call `EndFunctionWithDurationSince()` with `defer` at the beginning of function call. For example
 
 ```go
 func myfunction(){
