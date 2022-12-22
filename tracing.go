@@ -25,7 +25,7 @@ type MetricsManager struct {
 
 var (
 	namespace          string
-	ProcessTimeBuckets = []float64{0.5, 0.8, 1, 1.2, 1.5, 2, 2.5, 10, 20, 60}
+	ProcessTimeBuckets = []float64{500, 1000, 1500, 2000, 4000, 6000, 10000}
 )
 
 // MustGetTracer creates a tracer with the specified name. If an invalid name
