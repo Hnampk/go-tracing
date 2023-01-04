@@ -90,14 +90,14 @@ func MustGetTracer(moduleName string) *Tracer {
 // StartFunction must be called at the begin of function
 func (t *Tracer) StartFunction(traceNo string) (startTime time.Time) {
 	startTime, millis := currentMillisWithTime()
-	t.flogging.GetRootLogger().Infof("[%s] StartFunction at %d", traceNo, millis)
+	t.flogging.GetRootLogger().Infof("%s [%s] StartFunction at %d", namespace, traceNo, millis)
 	t.metrics.countStartMetrics.WithLabelValues(getCallerFuncName()).Add(1)
 	return
 }
 
 // EndFunction must be called at the end of function
 func (t *Tracer) EndFunction(traceNo string) {
-	t.flogging.GetRootLogger().Infof("[%s] EndFunction at %d", traceNo, currentMillis())
+	t.flogging.GetRootLogger().Infof("%s [%s] EndFunction at %d", namespace, traceNo, currentMillis())
 	t.metrics.countEndMetrics.WithLabelValues(getCallerFuncName()).Add(1)
 }
 
